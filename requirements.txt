@@ -1,7 +1,6 @@
 flask
 gunicorn
-python-dotenv
+pymongo
 flask-bcrypt
-numpy
-pandas
-scikit-learn
+python-dotenv
+dnspython
