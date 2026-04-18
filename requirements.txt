@@ -1,0 +1,7 @@
+flask
+gunicorn
+python-dotenv
+flask-bcrypt
+numpy
+pandas
+scikit-learn

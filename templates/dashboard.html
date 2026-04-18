@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TradeNova AI Trading Platform</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* ═══════════════════════════════════════════
+     ROOT VARIABLES & RESET
+  ═══════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-void:    #070A0F;
+    --bg-base:    #0D1117;
+    --bg-panel:   #111820;
+    --bg-card:    #161E29;
+    --bg-hover:   #1C2535;
+    --border:     rgba(255,255,255,0.06);
+    --border-lit: rgba(255,255,255,0.12);
+
+    --accent-green:  #00E5A0;
+    --accent-red:    #FF4D6A;
+    --accent-yellow: #FFD166;
+    --accent-blue:   #3D9EFF;
+    --accent-purple: #A78BFA;
+
+    --text-primary:   #F0F4F8;
+    --text-secondary: #8899AA;
+    --text-muted:     #4A5A6A;
+
+    --font-ui:   'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    --sidebar-w: 220px;
+    --header-h: 58px;
+
+    --glow-green:  0 0 20px rgba(0,229,160,0.25);
+    --glow-red:    0 0 20px rgba(255,77,106,0.25);
+    --glow-blue:   0 0 20px rgba(61,158,255,0.20);
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    overflow: hidden;
+  }
+
+  /* ═══════════════════════════════════════════
+     APP SHELL
+  ═══════════════════════════════════════════ */
+  #app { display: flex; height: 100vh; width: 100vw; }
+
+  /* ═══════════════════════════════════════════
+     SIDEBAR
+  ═══════════════════════════════════════════ */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg-base);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-logo {
+    padding: 20px 22px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .sidebar-logo-text {
+    font-weight: 800; font-size: 17px;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sidebar-logo-text span {
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .sidebar-section { padding: 16px 10px 8px; }
+  .sidebar-section-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-muted); padding: 0 12px; margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: var(--radius-md);
+    cursor: pointer; transition: all 0.18s ease;
+    color: var(--text-secondary); font-weight: 600;
+    font-size: 13.5px; position: relative;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .nav-item.active {
+    background: rgba(0,229,160,0.10);
+    color: var(--accent-green);
+    box-shadow: inset 3px 0 0 var(--accent-green);
+  }
+  .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; background: var(--accent-green);
+    color: var(--bg-void); font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 20px;
+  }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    padding: 12px 10px;
+  }
+
+  /* ═══════════════════════════════════════════
+     MAIN AREA
+  ═══════════════════════════════════════════ */
+  #main {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; min-width: 0;
+  }
+
+  /* ═══════════════════════════════════════════
+     HEADER
+  ═══════════════════════════════════════════ */
+  #header {
+    height: var(--header-h);
+    background: var(--bg-base);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 20px; gap: 16px;
+    flex-shrink: 0; z-index: 50;
+  }
+
+  /* Symbol Search */
+  #symbol-search-wrap {
+    position: relative; width: 260px;
+  }
+  #symbol-input {
+    width: 100%; background: var(--bg-panel);
+    border: 1px solid var(--border-lit);
+    border-radius: var(--radius-md);
+    padding: 8px 14px 8px 36px;
+    color: var(--text-primary); font-family: var(--font-ui);
+    font-size: 13px; font-weight: 600;
+    outline: none; transition: all 0.2s;
+    cursor: pointer;
+  }
+  #symbol-input:focus {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 3px rgba(0,229,160,0.12);
+    background: var(--bg-card);
+  }
+  .symbol-search-icon {
+    position: absolute; left: 11px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted); font-size: 14px; pointer-events: none;
+  }
+  #symbol-dropdown {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--bg-card); border: 1px solid var(--border-lit);
+    border-radius: var(--radius-md); overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    z-index: 200; display: none;
+    animation: dropIn 0.15s ease;
+  }
+  @keyframes dropIn {
+    from { opacity:0; transform: translateY(-6px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  #symbol-dropdown.open { display: block; }
+  .sym-item {
+    padding: 9px 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: background 0.12s; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sym-item:last-child { border-bottom: none; }
+  .sym-item:hover, .sym-item.selected { background: var(--bg-hover); }
+  .sym-item.selected .sym-name { color: var(--accent-green); }
+  .sym-name { font-weight: 700; color: var(--text-primary); }
+  .sym-tag {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: rgba(61,158,255,0.15); color: var(--accent-blue);
+    font-family: var(--font-mono); font-weight: 600;
+  }
+  .sym-no-result {
+    padding: 16px; text-align: center;
+    color: var(--text-muted); font-size: 13px;
+  }
+
+  /* Header stats */
+  .header-divider {
+    width: 1px; height: 28px; background: var(--border);
+    margin: 0 4px;
+  }
+  .header-stat {
+    display: flex; flex-direction: column;
+    gap: 1px; padding: 0 12px;
+  }
+  .header-stat-label {
+    font-size: 10px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+  }
+  .header-stat-value {
+    font-family: var(--font-mono); font-size: 14px;
+    font-weight: 500; color: var(--text-primary);
+    transition: color 0.3s;
+  }
+
+  #signal-badge {
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    transition: all 0.4s ease;
+    font-family: var(--font-mono);
+  }
+  #signal-badge.buy { background: rgba(0,229,160,0.15); color: var(--accent-green); border: 1px solid rgba(0,229,160,0.3); box-shadow: var(--glow-green); }
+  #signal-badge.sell { background: rgba(255,77,106,0.15); color: var(--accent-red); border: 1px solid rgba(255,77,106,0.3); box-shadow: var(--glow-red); }
+  #signal-badge.hold { background: rgba(255,209,102,0.10); color: var(--accent-yellow); border: 1px solid rgba(255,209,102,0.2); }
+  #signal-badge.wait { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border); }
+
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .header-btn {
+    padding: 7px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-lit);
+    background: transparent; color: var(--text-secondary);
+    font-family: var(--font-ui); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.18s; letter-spacing: 0.3px;
+  }
+  .header-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .header-btn.primary {
+    background: rgba(0,229,160,0.12);
+    border-color: rgba(0,229,160,0.3);
+    color: var(--accent-green);
+  }
+  .header-btn.primary:hover { background: rgba(0,229,160,0.2); }
+  .header-btn.danger {
+    background: rgba(255,77,106,0.10);
+    border-color: rgba(255,77,106,0.25);
+    color: var(--accent-red);
+  }
+  .header-btn.danger:hover { background: rgba(255,77,106,0.18); }
+
+  /* ═══════════════════════════════════════════
+     CONTENT AREA
+  ═══════════════════════════════════════════ */
+  #content { flex: 1; overflow: hidden; position: relative; }
+
+  /* PAGES */
+  .page { display: none; height: 100%; }
+  .page.active { display: flex; }
+
+  /* ═══════════════════════════════════════════
+     DASHBOARD PAGE
+  ═══════════════════════════════════════════ */
+  #page-dashboard {
+    flex-direction: row; gap: 0;
+  }
+
+  /* Chart area */
+  #chart-col {
+    flex: 1; display: flex; flex-direction: column;
+    border-right: 1px solid var(--border); min-width: 0;
+  }
+
+  #chart-toolbar {
+    height: 40px; background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 16px; gap: 6px;
+    flex-shrink: 0;
+  }
+  .tf-btn {
+    padding: 3px 9px; border-radius: 5px;
+    font-size: 11px; font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-muted); cursor: pointer;
+    transition: all 0.15s; border: none; background: none;
+  }
+  .tf-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .tf-btn.active { background: rgba(61,158,255,0.15); color: var(--accent-blue); }
+  .chart-toolbar-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+
+  #chart-wrap {
+    flex: 1; position: relative; background: var(--bg-base);
+  }
+  #chart { width: 100%; height: 100%; }
+
+  /* Right panel */
+  #right-panel {
+    width: 300px; flex-shrink: 0;
+    background: var(--bg-base);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+  }
+  .panel-section-title {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 12px;
+  }
+
+  /* Active Trade card */
+  #trade-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: 14px;
+    transition: all 0.4s;
+  }
+  #trade-card.has-trade {
+    border-color: rgba(0,229,160,0.25);
+    box-shadow: 0 0 0 1px rgba(0,229,160,0.05), var(--glow-green);
+  }
+
+  .trade-type-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    margin-bottom: 12px; font-family: var(--font-mono);
+  }
+  .trade-type-badge.buy { background: rgba(0,229,160,0.15); color: var(--accent-green); border: 1px solid rgba(0,229,160,0.3); }
+  .trade-type-badge.sell { background: rgba(255,77,106,0.15); color: var(--accent-red); border: 1px solid rgba(255,77,106,0.3); }
+  .trade-type-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  .trade-row {
+    display: flex; justify-content: space-between;
+    align-items: center; padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .trade-row:last-child { border-bottom: none; }
+  .trade-label { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
+  .trade-value { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+  #pnl-value {
+    font-family: var(--font-mono); font-size: 22px;
+    font-weight: 700; text-align: center; padding: 10px 0 4px;
+    transition: color 0.3s;
+  }
+  .pnl-pos { color: var(--accent-green) !important; }
+  .pnl-neg { color: var(--accent-red) !important; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .stat-card {
+    background: var(--bg-card); border-radius: var(--radius-md);
+    border: 1px solid var(--border); padding: 12px;
+  }
+  .stat-card-label { font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-card-value { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .stat-card-value.green { color: var(--accent-green); }
+  .stat-card-value.red { color: var(--accent-red); }
+
+  /* ═══════════════════════════════════════════
+     HISTORY PAGE
+  ═══════════════════════════════════════════ */
+  #page-history {
+    flex-direction: column; padding: 28px; overflow-y: auto;
+    background: var(--bg-void);
+  }
+
+  .page-title {
+    font-size: 22px; font-weight: 800; margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  .page-subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+
+  .data-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--bg-base); border-radius: var(--radius-lg);
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  .data-table th {
+    background: var(--bg-panel); padding: 12px 16px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-muted);
+    text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--text-primary);
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--bg-hover); }
+  .data-table .mono { font-family: var(--font-mono); }
+  .badge-buy { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: rgba(0,229,160,0.15); color: var(--accent-green); font-family: var(--font-mono); }
+  .badge-sell { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: rgba(255,77,106,0.15); color: var(--accent-red); font-family: var(--font-mono); }
+  .pnl-pos-text { color: var(--accent-green); font-family: var(--font-mono); font-weight: 600; }
+  .pnl-neg-text { color: var(--accent-red); font-family: var(--font-mono); font-weight: 600; }
+
+  /* ═══════════════════════════════════════════
+     ACCOUNT PAGE
+  ═══════════════════════════════════════════ */
+  #page-account {
+    flex-direction: column; padding: 28px; overflow-y: auto;
+    background: var(--bg-void);
+  }
+
+  .account-hero {
+    background: linear-gradient(135deg, rgba(0,229,160,0.08) 0%, rgba(61,158,255,0.06) 100%);
+    border: 1px solid rgba(0,229,160,0.15);
+    border-radius: var(--radius-xl); padding: 28px;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 20px;
+  }
+  .avatar {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; color: var(--bg-void);
+    flex-shrink: 0;
+  }
+  .account-name { font-size: 22px; font-weight: 800; margin-bottom: 2px; }
+  .account-email { color: var(--text-muted); font-size: 13px; }
+  .account-joined { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+
+  .account-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .account-card {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .account-card:hover { border-color: var(--border-lit); }
+  .account-card-icon { font-size: 22px; margin-bottom: 10px; }
+  .account-card-label { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px; }
+  .account-card-value { font-family: var(--font-mono); font-size: 20px; font-weight: 700; }
+
+  /* ═══════════════════════════════════════════
+     LOGIN PAGE
+  ═══════════════════════════════════════════ */
+  #page-login {
+    flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg-void); position: fixed; inset: 0; z-index: 500;
+  }
+
+  .login-card {
+    width: 400px; background: var(--bg-base);
+    border: 1px solid var(--border-lit);
+    border-radius: var(--radius-xl); padding: 40px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    animation: fadeUp 0.4s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-logo {
+    text-align: center; margin-bottom: 28px;
+  }
+  .login-logo-mark {
+    width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 12px;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  }
+  .login-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .login-sub { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 7px; display: block; letter-spacing: 0.3px; }
+  .form-input {
+    width: 100%; background: var(--bg-panel);
+    border: 1px solid var(--border-lit); border-radius: var(--radius-md);
+    padding: 11px 14px; color: var(--text-primary);
+    font-family: var(--font-ui); font-size: 14px; outline: none;
+    transition: all 0.2s;
+  }
+  .form-input:focus {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 3px rgba(0,229,160,0.1);
+    background: var(--bg-card);
+  }
+  .form-input::placeholder { color: var(--text-muted); }
+
+  .login-btn {
+    width: 100%; padding: 13px; border: none; border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--accent-green), #00c87a);
+    color: var(--bg-void); font-family: var(--font-ui);
+    font-size: 14px; font-weight: 800; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.3px; margin-top: 4px;
+  }
+  .login-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,0.3); }
+  .login-btn:active { transform: translateY(0); }
+
+  .login-footer { text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 12px; }
+  .login-footer a { color: var(--accent-green); cursor: pointer; text-decoration: none; }
+
+  /* ═══════════════════════════════════════════
+     TOAST
+  ═══════════════════════════════════════════ */
+  #toast-container {
+    position: fixed; top: 20px; right: 20px;
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--bg-card); border-radius: var(--radius-md);
+    padding: 12px 16px; min-width: 260px; max-width: 320px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    border-left: 3px solid var(--accent-green);
+    animation: slideIn 0.3s ease;
+    display: flex; align-items: flex-start; gap: 10px;
+    pointer-events: all;
+  }
+  .toast.error { border-left-color: var(--accent-red); }
+  .toast.warning { border-left-color: var(--accent-yellow); }
+  .toast.info { border-left-color: var(--accent-blue); }
+  @keyframes slideIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes slideOut { from { opacity:1; transform: translateX(0); } to { opacity:0; transform: translateX(20px); } }
+  .toast-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .toast-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+  .toast-msg { font-size: 12px; color: var(--text-secondary); }
+
+  /* ═══════════════════════════════════════════
+     SCROLLBAR
+  ═══════════════════════════════════════════ */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ═══════════════════════════════════════════
+     MARKET STATUS DOT
+  ═══════════════════════════════════════════ */
+  .market-status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted); padding: 0 8px;
+  }
+  .market-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .market-dot.open { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: pulse 2s infinite; }
+
+  /* No trade state */
+  .no-trade {
+    text-align: center; padding: 20px 10px;
+    color: var(--text-muted); font-size: 13px;
+  }
+  .no-trade-icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* Empty table */
+  .table-empty {
+    text-align: center; padding: 40px;
+    color: var(--text-muted); font-size: 13px;
+  }
+  .table-empty-icon { font-size: 32px; margin-bottom: 10px; }
+
+  /* Shimmer for loading */
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- ════════════════════════════════════
+     LOGIN PAGE
+════════════════════════════════════ -->
+<div id="page-login" class="page active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">⚡</div>
+      <div class="login-title">TradeNova AI</div>
+      <div class="login-sub">AI-Powered Index Trading Platform</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">EMAIL ADDRESS</label>
+      <input id="login-email" type="email" class="form-input" placeholder="trader@example.com" value="demo@tradenova.ai"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">PASSWORD</label>
+      <input id="login-pass" type="password" class="form-input" placeholder="••••••••" value="password"/>
+    </div>
+
+    <button class="login-btn" onclick="doLogin()">SIGN IN →</button>
+
+    <div class="login-footer">
+      Demo account &nbsp;·&nbsp; <a onclick="doLogin()">Continue as guest</a>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MAIN APP
+════════════════════════════════════ -->
+<div id="app" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">⚡</div>
+      <div class="sidebar-logo-text">Trade<span>Nova</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Trading</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('history',this)">
+        <span class="nav-icon">📋</span> Trade History
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Account</div>
+      <div class="nav-item" onclick="showPage('account',this)">
+        <span class="nav-icon">👤</span> Account
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="nav-item" onclick="doLogout()">
+        <span class="nav-icon">🚪</span> Logout
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div id="main">
+    <!-- HEADER -->
+    <div id="header">
+      <!-- Symbol search -->
+      <div id="symbol-search-wrap">
+        <span class="symbol-search-icon">🔍</span>
+        <input id="symbol-input" type="text" placeholder="Search index…" autocomplete="off"
+               oninput="filterSymbols()" onfocus="openDropdown()" onblur="closeDropdownDelay()" />
+        <div id="symbol-dropdown"></div>
+      </div>
+
+      <div class="header-divider"></div>
+
+      <!-- Live price -->
+      <div class="header-stat">
+        <div class="header-stat-label">LIVE PRICE</div>
+        <div class="header-stat-value" id="hdr-price">—</div>
+      </div>
+
+      <div class="header-divider"></div>
+
+      <!-- Balance -->
+      <div class="header-stat">
+        <div class="header-stat-label">BALANCE</div>
+        <div class="header-stat-value" id="hdr-balance">₹50,000</div>
+      </div>
+
+      <div class="header-divider"></div>
+
+      <!-- Signal -->
+      <span id="signal-badge" class="wait">● WAIT</span>
+
+      <!-- Market status -->
+      <div class="market-status">
+        <div class="market-dot" id="market-dot"></div>
+        <span id="market-label">—</span>
+      </div>
+
+      <!-- Right controls -->
+      <div class="header-right">
+        <button class="header-btn primary" onclick="startTrade()">▶ Start</button>
+        <button class="header-btn danger" onclick="stopTrade()">■ Stop</button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div id="content">
+
+      <!-- DASHBOARD -->
+      <div id="page-dashboard" class="page active">
+
+        <!-- Chart column -->
+        <div id="chart-col">
+          <div id="chart-toolbar">
+            <span style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-right:6px;" id="toolbar-symbol">NIFTY</span>
+            <div class="chart-toolbar-sep"></div>
+            <button class="tf-btn active">1m</button>
+            <button class="tf-btn">5m</button>
+            <button class="tf-btn">15m</button>
+          </div>
+          <div id="chart-wrap">
+            <div id="chart"></div>
+          </div>
+        </div>
+
+        <!-- Right panel -->
+        <div id="right-panel">
+
+          <!-- Active trade -->
+          <div class="panel-section">
+            <div class="panel-section-title">Active Trade</div>
+            <div id="trade-card">
+              <div id="trade-content">
+                <div class="no-trade">
+                  <div class="no-trade-icon">🎯</div>
+                  Waiting for signal…
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Account stats -->
+          <div class="panel-section">
+            <div class="panel-section-title">Performance</div>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-card-label">Balance</div>
+                <div class="stat-card-value" id="stat-balance">₹50,000</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card-label">Total PnL</div>
+                <div class="stat-card-value" id="stat-pnl">₹0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card-label">Trades</div>
+                <div class="stat-card-value" id="stat-trades">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card-label">Win Rate</div>
+                <div class="stat-card-value" id="stat-winrate">—</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- HISTORY PAGE -->
+      <div id="page-history" class="page">
+        <div class="page-title">Trade History</div>
+        <div class="page-subtitle">All paper trades placed by the AI engine</div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>TYPE</th>
+              <th>ENTRY</th>
+              <th>EXIT</th>
+              <th>PnL</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr>
+              <td colspan="5">
+                <div class="table-empty">
+                  <div class="table-empty-icon">📭</div>
+                  No trades yet — start the bot to begin
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ACCOUNT PAGE -->
+      <div id="page-account" class="page">
+        <div class="account-hero">
+          <div class="avatar" id="acc-avatar">T</div>
+          <div>
+            <div class="account-name" id="acc-name">Trader</div>
+            <div class="account-email" id="acc-email">demo@tradenova.ai</div>
+            <div class="account-joined">Member since March 2025 · Paper Trading</div>
+          </div>
+        </div>
+
+        <div class="account-cards">
+          <div class="account-card">
+            <div class="account-card-icon">💰</div>
+            <div class="account-card-label">Balance</div>
+            <div class="account-card-value" id="acc-balance">₹50,000</div>
+          </div>
+          <div class="account-card">
+            <div class="account-card-icon">📈</div>
+            <div class="account-card-label">Total PnL</div>
+            <div class="account-card-value" id="acc-pnl">₹0</div>
+          </div>
+          <div class="account-card">
+            <div class="account-card-icon">🔄</div>
+            <div class="account-card-label">Total Trades</div>
+            <div class="account-card-value" id="acc-trades">0</div>
+          </div>
+          <div class="account-card">
+            <div class="account-card-icon">✅</div>
+            <div class="account-card-label">Wins</div>
+            <div class="account-card-value green" id="acc-wins">0</div>
+          </div>
+          <div class="account-card">
+            <div class="account-card-icon">❌</div>
+            <div class="account-card-label">Losses</div>
+            <div class="account-card-value red" id="acc-losses">0</div>
+          </div>
+          <div class="account-card">
+            <div class="account-card-icon">🎯</div>
+            <div class="account-card-label">Win Rate</div>
+            <div class="account-card-value" id="acc-winrate">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════ -->
+<script>
+/* ─── INDICES ─────────────────────────────────────────── */
+const INDICES = [
+  { label: "NIFTY 50",        value: "NIFTY",          tag: "NSE" },
+  { label: "BANK NIFTY",      value: "BANKNIFTY",      tag: "NSE" },
+  { label: "FIN NIFTY",       value: "FINNIFTY",       tag: "NSE" },
+  { label: "NIFTY IT",        value: "NIFTYIT",        tag: "NSE" },
+  { label: "NIFTY FMCG",      value: "NIFTYFMCG",      tag: "NSE" },
+  { label: "NIFTY AUTO",      value: "NIFTYAUTO",      tag: "NSE" },
+  { label: "NIFTY PHARMA",    value: "NIFTYPHARMA",    tag: "NSE" },
+  { label: "NIFTY METAL",     value: "NIFTYMETAL",     tag: "NSE" },
+  { label: "NIFTY REALTY",    value: "NIFTYREALTY",    tag: "NSE" },
+  { label: "NIFTY INFRA",     value: "NIFTYINFRA",     tag: "NSE" },
+  { label: "NIFTY ENERGY",    value: "NIFTYENERGY",    tag: "NSE" },
+  { label: "NIFTY MIDCAP 100",value: "NIFTYMIDCAP100", tag: "NSE" },
+  { label: "NIFTY NEXT 50",   value: "NIFTYNXT50",     tag: "NSE" },
+  { label: "NIFTY 100",       value: "NIFTY100",       tag: "NSE" },
+];
+
+let selectedSymbol = INDICES[0];
+let dropdownOpen = false;
+
+/* ─── SYMBOL DROPDOWN ────────────────────────────────── */
+function renderDropdown(filter = "") {
+  const dd = document.getElementById("symbol-dropdown");
+  const q = filter.trim().toLowerCase();
+  const results = INDICES.filter(s =>
+    s.label.toLowerCase().includes(q) || s.value.toLowerCase().includes(q)
+  );
+
+  if (results.length === 0) {
+    dd.innerHTML = `<div class="sym-no-result">No index found</div>`;
+    return;
+  }
+
+  dd.innerHTML = results.map(s => `
+    <div class="sym-item ${s.value === selectedSymbol.value ? 'selected' : ''}"
+         onmousedown="selectSymbol('${s.value}')">
+      <span class="sym-name">${s.label}</span>
+      <span class="sym-tag">${s.tag}</span>
+    </div>
+  `).join('');
+}
+
+function openDropdown() {
+  dropdownOpen = true;
+  renderDropdown(document.getElementById("symbol-input").value);
+  document.getElementById("symbol-dropdown").classList.add("open");
+  document.getElementById("symbol-input").select();
+}
+
+function closeDropdownDelay() {
+  setTimeout(() => {
+    document.getElementById("symbol-dropdown").classList.remove("open");
+    dropdownOpen = false;
+    document.getElementById("symbol-input").value = selectedSymbol.label;
+  }, 180);
+}
+
+function filterSymbols() {
+  renderDropdown(document.getElementById("symbol-input").value);
+  document.getElementById("symbol-dropdown").classList.add("open");
+}
+
+function selectSymbol(value) {
+  const sym = INDICES.find(s => s.value === value);
+  if (!sym) return;
+  selectedSymbol = sym;
+  document.getElementById("symbol-input").value = sym.label;
+  document.getElementById("toolbar-symbol").textContent = sym.value;
+  fetch(`/set-symbol?symbol=${sym.value}`);
+  toast(`Switched to ${sym.label}`, 'info', '📊');
+}
+
+/* init dropdown */
+document.getElementById("symbol-input").value = selectedSymbol.label;
+
+/* ─── CHART ──────────────────────────────────────────── */
+const chart = LightweightCharts.createChart(document.getElementById("chart"), {
+  width:  document.getElementById("chart-wrap").offsetWidth,
+  height: document.getElementById("chart-wrap").offsetHeight,
+  layout: {
+    background: { color: "#0D1117" },
+    textColor:  "#8899AA"
+  },
+  grid: {
+    vertLines: { color: "#161E29" },
+    horzLines: { color: "#161E29" }
+  },
+  crosshair: { mode: 1 },
+  timeScale: {
+    timeVisible: true,
+    secondsVisible: false,
+    borderColor: "#1C2535",
+    fixLeftEdge: true,
+  },
+  rightPriceScale: { borderColor: "#1C2535" },
+  handleScroll: true,
+  handleScale: true,
+});
+
+const candleSeries = chart.addCandlestickSeries({
+  upColor:     "#00E5A0",
+  downColor:   "#FF4D6A",
+  borderVisible: false,
+  wickUpColor:   "#00E5A0",
+  wickDownColor: "#FF4D6A",
+});
+
+/* Resize observer */
+const resizeObs = new ResizeObserver(entries => {
+  for (const e of entries) {
+    chart.applyOptions({
+      width:  e.contentRect.width,
+      height: e.contentRect.height,
+    });
+  }
+});
+resizeObs.observe(document.getElementById("chart-wrap"));
+
+let entryLine = null, slLine = null, targetLine = null;
+
+/* ─── LIVE DATA LOOP ─────────────────────────────────── */
+let prevPrice = null;
+let prevSignal = null;
+
+function loadData() {
+  const sym = selectedSymbol.value;
+
+  // Price
+  fetch(`/live-price?symbol=${sym}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.price !== undefined && d.price !== 0) {
+        const p = parseFloat(d.price).toFixed(2);
+        const el = document.getElementById("hdr-price");
+        el.textContent = "₹" + Number(p).toLocaleString("en-IN");
+
+        if (prevPrice !== null) {
+          el.style.color = d.price > prevPrice ? "var(--accent-green)" : d.price < prevPrice ? "var(--accent-red)" : "var(--text-primary)";
+          setTimeout(() => el.style.color = "var(--text-primary)", 700);
+        }
+        prevPrice = d.price;
+      }
+    }).catch(() => {});
+
+  // Candles + trade + signal
+  fetch(`/live-candles?symbol=${sym}`)
+    .then(r => r.json())
+    .then(d => {
+      // Candles
+      if (d.candles && d.candles.length > 0) {
+        candleSeries.setData(d.candles);
+        chart.timeScale().scrollToRealTime();
+      }
+
+      // Signal badge
+      const sig = (d.signal || "WAIT").toUpperCase();
+      const badge = document.getElementById("signal-badge");
+      badge.className = "";
+      if (sig === "BUY")  { badge.classList.add("buy");  badge.textContent = "▲ BUY"; }
+      else if (sig === "SELL") { badge.classList.add("sell"); badge.textContent = "▼ SELL"; }
+      else if (sig === "HOLD") { badge.classList.add("hold"); badge.textContent = "◆ HOLD"; }
+      else { badge.classList.add("wait"); badge.textContent = "● " + sig; }
+
+      if (prevSignal !== null && prevSignal !== sig && (sig === "BUY" || sig === "SELL")) {
+        toast(`AI Signal: ${sig}`, sig === "BUY" ? 'success' : 'error',
+              sig === "BUY" ? "▲" : "▼");
+      }
+      prevSignal = sig;
+
+      // Price lines
+      if (entryLine)  { try { candleSeries.removePriceLine(entryLine); } catch(e){} entryLine = null; }
+      if (slLine)     { try { candleSeries.removePriceLine(slLine); }   catch(e){} slLine = null; }
+      if (targetLine) { try { candleSeries.removePriceLine(targetLine); } catch(e){} targetLine = null; }
+
+      const tr = d.trade;
+      const card = document.getElementById("trade-card");
+      const content = document.getElementById("trade-content");
+
+      if (tr && tr.entry) {
+        entryLine  = candleSeries.createPriceLine({ price: tr.entry,  color: "#00E5A0", lineWidth: 1, title: "ENTRY" });
+        slLine     = candleSeries.createPriceLine({ price: tr.sl,     color: "#FF4D6A", lineWidth: 1, lineStyle: 2, title: "SL" });
+        targetLine = candleSeries.createPriceLine({ price: tr.target, color: "#FFD166", lineWidth: 1, lineStyle: 2, title: "TGT" });
+
+        const dir = (tr.type || "BUY").toUpperCase();
+        const pnl = parseFloat(tr.pnl || 0);
+        const pnlColor = pnl > 0 ? "var(--accent-green)" : pnl < 0 ? "var(--accent-red)" : "var(--text-secondary)";
+        const pnlSign  = pnl > 0 ? "+" : "";
+
+        card.className = "has-trade";
+
+        content.innerHTML = `
+          <div class="trade-type-badge ${dir.toLowerCase()}">
+            <span class="dot"></span> ${dir}
+          </div>
+          <div class="trade-row">
+            <span class="trade-label">ENTRY</span>
+            <span class="trade-value">₹${Number(tr.entry).toLocaleString("en-IN",{minimumFractionDigits:2})}</span>
+          </div>
+          <div class="trade-row">
+            <span class="trade-label">STOP LOSS</span>
+            <span class="trade-value" style="color:var(--accent-red)">₹${Number(tr.sl).toLocaleString("en-IN",{minimumFractionDigits:2})}</span>
+          </div>
+          <div class="trade-row">
+            <span class="trade-label">TARGET</span>
+            <span class="trade-value" style="color:var(--accent-yellow)">₹${Number(tr.target).toLocaleString("en-IN",{minimumFractionDigits:2})}</span>
+          </div>
+          <div id="pnl-value" style="color:${pnlColor}">
+            ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
+          </div>
+          <div style="text-align:center;font-size:11px;color:var(--text-muted)">Unrealised PnL</div>
+        `;
+      } else {
+        card.className = "";
+        content.innerHTML = `
+          <div class="no-trade">
+            <div class="no-trade-icon">🎯</div>
+            Waiting for signal…
+          </div>`;
+      }
+
+      // Market status
+      const closed = sig === "MARKET CLOSED";
+      document.getElementById("market-dot").className = "market-dot" + (closed ? "" : " open");
+      document.getElementById("market-label").textContent = closed ? "Market Closed" : "Market Open";
+
+    }).catch(() => {});
+
+  // PnL data
+  fetch("/pnl-data")
+    .then(r => r.json())
+    .then(d => {
+      const bal = "₹" + Number(d.balance || 50000).toLocaleString("en-IN", {minimumFractionDigits:2});
+      const pnl = d.pnl || 0;
+      const pnlStr = (pnl >= 0 ? "+" : "") + "₹" + Math.abs(pnl).toFixed(2);
+      const trades = d.total_trades || 0;
+      const wins   = d.wins || 0;
+      const losses = d.losses || 0;
+      const wr     = trades > 0 ? ((wins / trades) * 100).toFixed(1) + "%" : "—";
+
+      document.getElementById("hdr-balance").textContent = bal;
+
+      // Dashboard stats
+      document.getElementById("stat-balance").textContent = bal;
+      const spnl = document.getElementById("stat-pnl");
+      spnl.textContent = pnlStr;
+      spnl.className = "stat-card-value " + (pnl >= 0 ? "green" : "red");
+
+      document.getElementById("stat-trades").textContent = trades;
+      document.getElementById("stat-winrate").textContent = wr;
+
+      // Account page
+      document.getElementById("acc-balance").textContent = bal;
+      document.getElementById("acc-pnl").textContent = pnlStr;
+      document.getElementById("acc-pnl").style.color = pnl >= 0 ? "var(--accent-green)" : "var(--accent-red)";
+      document.getElementById("acc-trades").textContent = trades;
+      document.getElementById("acc-wins").textContent = wins;
+      document.getElementById("acc-losses").textContent = losses;
+      document.getElementById("acc-winrate").textContent = wr;
+
+      // History table
+      const tbody = document.getElementById("history-tbody");
+      const history = d.history || [];
+      if (history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="table-empty"><div class="table-empty-icon">📭</div>No trades yet — start the bot to begin</div></td></tr>`;
+      } else {
+        tbody.innerHTML = history.slice().reverse().map((t, i) => {
+          const p = parseFloat(t.pnl || 0);
+          return `
+            <tr>
+              <td class="mono">${history.length - i}</td>
+              <td><span class="badge-${(t.direction||"BUY").toLowerCase()}">${t.direction||"—"}</span></td>
+              <td class="mono">₹${Number(t.entry).toLocaleString("en-IN",{minimumFractionDigits:2})}</td>
+              <td class="mono">₹${Number(t.exit).toLocaleString("en-IN",{minimumFractionDigits:2})}</td>
+              <td class="${p >= 0 ? 'pnl-pos-text' : 'pnl-neg-text'}">${p >= 0 ? '+' : ''}₹${p.toFixed(2)}</td>
+            </tr>`;
+        }).join("");
+      }
+    }).catch(() => {});
+}
+
+setInterval(loadData, 2000);
+loadData();
+
+/* ─── TOAST ──────────────────────────────────────────── */
+function toast(msg, type = "success", icon = "✅", title = null) {
+  const ICONS = { success:"✅", error:"❌", warning:"⚠️", info:"ℹ️" };
+  const ic = icon || ICONS[type] || "✅";
+  const el = document.createElement("div");
+  el.className = `toast ${type === "error" ? "error" : type === "warning" ? "warning" : type === "info" ? "info" : ""}`;
+  el.innerHTML = `
+    <div class="toast-icon">${ic}</div>
+    <div>
+      <div class="toast-title">${title || (type === "success" ? "Success" : type === "error" ? "Alert" : "Info")}</div>
+      <div class="toast-msg">${msg}</div>
+    </div>`;
+  document.getElementById("toast-container").appendChild(el);
+  setTimeout(() => {
+    el.style.animation = "slideOut 0.3s ease forwards";
+    setTimeout(() => el.remove(), 300);
+  }, 3200);
+}
+
+/* ─── CONTROLS ───────────────────────────────────────── */
+function startTrade() {
+  fetch("/start-trading").then(r => r.text()).then(() => {
+    toast("Paper trading engine started", "success", "▶");
+  });
+}
+
+function stopTrade() {
+  fetch("/stop-trading").then(r => r.text()).then(() => {
+    toast("Trading engine stopped", "warning", "■");
+  });
+}
+
+/* ─── NAVIGATION ─────────────────────────────────────── */
+function showPage(name, navEl) {
+  document.querySelectorAll(".page").forEach(p => {
+    if (p.id !== "page-login") p.classList.remove("active");
+  });
+  document.getElementById("page-" + name).classList.add("active");
+
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  if (navEl) navEl.classList.add("active");
+
+  if (name === "history" || name === "account") loadData();
+}
+
+/* ─── LOGIN / LOGOUT ─────────────────────────────────── */
+function doLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  if (!email) { toast("Please enter your email", "warning"); return; }
+
+  const name = email.split("@")[0];
+  const initial = name.charAt(0).toUpperCase();
+
+  document.getElementById("acc-avatar").textContent = initial;
+  document.getElementById("acc-name").textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  document.getElementById("acc-email").textContent = email;
+
+  document.getElementById("page-login").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+  toast(`Welcome back, ${name}!`, "success", "👋");
+}
+
+function doLogout() {
+  document.getElementById("app").style.display = "none";
+  document.getElementById("page-login").style.display = "";
+  document.getElementById("page-login").classList.add("active");
+}
+
+/* ─── TOOLBAR TIMEFRAME (visual only) ───────────────── */
+document.querySelectorAll(".tf-btn").forEach(btn => {
+  btn.addEventListener("click", function() {
+    document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+    this.classList.add("active");
+  });
+});
+</script>
+</body>
+</html>
